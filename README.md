@@ -26,10 +26,10 @@ Channels can be thought of as a chain of buckets with one horrible monster creat
 There are three components: **senders**, **buffer** (optional), **receiver**
 
 #### When would this model block? 
-💤 If a sender doesn't have a receiver 
-💤 If a sender fills a buffer but doesn't have a receiver 
-💤 If a receiver doesn't have a sender
-💤 If a buffer doesn't have a sender to get data for a receiver 
+- 💤 If a sender doesn't have a receiver 
+- 💤 If a sender fills a buffer but doesn't have a receiver 
+- 💤 If a receiver doesn't have a sender
+- 💤 If a buffer doesn't have a sender to get data for a receiver 
 
 (*N.B. - buffers are dumb they are just space to fill*)
 
@@ -44,7 +44,9 @@ a := <-unbuffered
 // 2) we try to send something to the channel but is blocks because the channel has no receiver
 unbuffered <-1
 
-// 3) we need a sender and a receiver so we start a go routinen and send. This blocks until both elements reach the channel (it's a simple form of synchronising pattern). (note that if we were to wrap the sender in a go routine then the program would exit before doing anything (as neither would reach the channel - blocking allows us to synchronise))
+// 3) we need a sender and a receiver so we start a go routinen and send. This blocks until both elements reach the channel 
+// (it's a simple form of synchronising pattern). (note that if we were to wrap the sender in a go routine then the program 
+// would exit before doing anything (as neither would reach the channel - blocking allows us to synchronise))
 go func() { <-unbuffered }()
 unbuffered <-1
 ```
@@ -76,14 +78,16 @@ close(c)
 
 fmt.Println(<-c) // receive and print from the channel
 
-// what gets printed?? it must do something as closing generates a message: we get "0, false" this is a zero value of channel type (0), and false to indicate _no more datas_
+// what gets printed?? it must do something as closing generates a message: we get "0, false" this is a zero 
+// value of channel type (0), and false to indicate _no more datas_
 ```
 
 ### SELECT
 Select is like a switch statement for channel operations. The order of its cases doesn't matter and it will select the first non-blocking case to send/receive on. It also has a default case which come in handy for creating a potentially non-blocking channel
 
 ```go 
-// this is a little unrealistic - if there is data and more to come we select the first case else we send the 0 message but tell the reciever that there is no data at present but there is more preventing it from blocking. 
+// this is a little unrealistic - if there is data and more to come we select the first case else we send 
+// the 0 message but tell the reciever that there is no data at present but there is more preventing it from blocking. 
 func TryReceive(c<- chan int) (data int, more, ok bool) {
   select {
     case data, more = <-c:
@@ -94,7 +98,8 @@ func TryReceive(c<- chan int) (data int, more, ok bool) {
   }
 }
 
-// THis channel is blocking immediately and is blocking until the duration is over then it will send the time channel was unblocked. 
+// THis channel is blocking immediately and is blocking until the duration is over then it will send the time 
+// channel was unblocked. 
 func TryReceiveWithTimeOut(c<- chan int, duration time.Duration) (data int, more, ok bool) {
   select {
     case data, more = <-c: 
@@ -253,7 +258,8 @@ func (ts *TicketStore) Put(s string) {
   t := atomic.AddUint64(ts.ticket, 1) -1 //draw a ticket (-1 because we get the value after the operation)
   slots[t] = s //store your data
 
-  // this stops us for being wait-free here (it waits until the done variable has the state of our ticket before moving on. debug example below shows how not waiting will result inn a race condition)
+  // this stops us for being wait-free here (it waits until the done variable has the state of our ticket before 
+  // moving on. debug example below shows how not waiting will result inn a race condition)
   for !atomic.CompareAndSwapUint64(ts.done, t, t+1) { //increase done
     runtime.Gosched()
   }
